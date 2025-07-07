@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTAS Expert Prediction System</title>
+    <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>KTAS Expert Level Prediction</h1>
+            <p>Korean Triage and Acuity Scale Assessment Tool</p>
+            <div class="subtitle">Emergency Department Clinical Decision Support</div>
+        </div>
+        
+        <div class="main-content">
+            <form id="predictionForm" method="POST" action="/predict">
+                <!-- Demographics Section -->
+                <div class="form-section demographics">
+                    <h3 class="section-title">Patient Demographics & Facility</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="Group" class="required">ED Type</label>
+                            <select id="Group" name="Group" required>
+                                <option value="">Select ED Type...</option>
+                                <option value="1">Local ED</option>
+                                <option value="2">Regional ED</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="Sex" class="required">Sex</label>
+                            <select id="Sex" name="Sex" required>
+                                <option value="">Select...</option>
+                                <option value="1">Female</option>
+                                <option value="2">Male</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="Age" class="required">Age <span class="field-info">(years)</span></label>
+                            <input type="number" id="Age" name="Age" required min="0" max="120" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clinical Assessment -->
+                <div class="form-section clinical">
+                    <h3 class="section-title">Clinical Assessment</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="Injury" class="required">Injury Status</label>
+                            <select id="Injury" name="Injury" required>
+                                <option value="">Select...</option>
+                                <option value="1">Non-injury</option>
+                                <option value="2">Injury</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="Pain" class="required">Pain Status</label>
+                            <select id="Pain" name="Pain" required>
+                                <option value="">Select...</option>
+                                <option value="1">Pain</option>
+                                <option value="2">Non-pain</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="NRS_pain" class="required">NRS Pain Score <span class="field-info">(0-10)</span></label>
+                            <input type="number" id="NRS_pain" name="NRS_pain" required min="0" max="10" step="1">
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="Chief_complain" class="required">Chief Complaint</label>
+                        <textarea id="Chief_complain" name="Chief_complain" required placeholder="Describe the patient's primary complaint in detail (e.g., chest pain, shortness of breath, abdominal pain)..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Vital Signs -->
+                <div class="form-section vitals">
+                    <h3 class="section-title">Vital Signs</h3>
+                    <div class="form-grid">
+                        <div class="form-group critical-field">
+                            <label for="SBP" class="required">Systolic BP <span class="field-info">(mmHg)</span></label>
+                            <input type="number" id="SBP" name="SBP" required min="50" max="300" step="1">
+                        </div>
+                        <div class="form-group critical-field">
+                            <label for="RR" class="required">Respiratory Rate <span class="field-info">(breaths/min)</span></label>
+                            <input type="number" id="RR" name="RR" required min="5" max="60" step="1">
+                        </div>
+                        <div class="form-group critical-field">
+                            <label for="BT" class="required">Body Temperature <span class="field-info">(°C)</span></label>
+                            <input type="number" id="BT" name="BT" required step="0.1" min="30" max="45">
+                        </div>
+                        <div class="form-group critical-field">
+                            <label for="Saturation" class="required">Oxygen Saturation <span class="field-info">(%)</span></label>
+                            <input type="number" id="Saturation" name="Saturation" required min="50" max="100" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assessment & Triage -->
+                <div class="form-section assessment">
+                    <h3 class="section-title">Triage Assessment</h3>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="KTAS_RN" class="required">KTAS RN Assessment <span class="field-info">(1-5)</span></label>
+                            <select id="KTAS_RN" name="KTAS_RN" required>
+                                <option value="">Select KTAS level...</option>
+                                <option value="1">Level 1 - Resuscitation</option>
+                                <option value="2">Level 2 - Emergent</option>
+                                <option value="3">Level 3 - Urgent</option>
+                                <option value="4">Level 4 - Less Urgent</option>
+                                <option value="5">Level 5 - Non-urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="Error_group" class="required">Error Group</label>
+                            <select id="Error_group" name="Error_group" required>
+                                <option value="">Select error type...</option>
+                                <option value="1">Vital sign</option>
+                                <option value="2">Physical exam</option>
+                                <option value="3">Psychiatric</option>
+                                <option value="4">Pain</option>
+                                <option value="5">Mental</option>
+                                <option value="6">Underlying disease</option>
+                                <option value="7">Medical records of other ED</option>
+                                <option value="8">Onset</option>
+                                <option value="9">Others</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="Diagnosis_in_ED" class="required">Diagnosis in ED</label>
+                        <textarea id="Diagnosis_in_ED" name="Diagnosis in ED" required placeholder="Enter the emergency department diagnosis and clinical findings (e.g., acute myocardial infarction, pneumonia, fracture)..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Outcome & Disposition -->
+                <div class="form-section outcome">
+                    <h3 class="section-title">Outcome & Disposition</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="Disposition" class="required">Disposition</label>
+                            <select id="Disposition" name="Disposition" required>
+                                <option value="">Select disposition...</option>
+                                <option value="1">Discharge</option>
+                                <option value="2">Ward Admission</option>
+                                <option value="3">ICU Admission</option>
+                                <option value="4">AMA Discharge</option>
+                                <option value="5">Transfer</option>
+                                <option value="6">Death</option>
+                                <option value="7">OP from ED</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="mistriage" class="required">Mistriage Status</label>
+                            <select id="mistriage" name="mistriage" required>
+                                <option value="">Select...</option>
+                                <option value="0">Correct</option>
+                                <option value="1">Over triage</option>
+                                <option value="2">Under triage</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="Length_of_stay_min" class="required">Length of Stay <span class="field-info">(minutes)</span></label>
+                            <input type="number" id="Length_of_stay_min" name="Length of stay_min" required min="0" step="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="KTAS_duration_min" class="required">KTAS Duration <span class="field-info">(minutes)</span></label>
+                            <input type="number" id="KTAS_duration_min" name="KTAS duration_min" required min="0" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button type="submit">Predict KTAS Expert Level</button>
+                </div>
+            </form>
+            
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = e.target;
+            const button = form.querySelector('button[type="submit"]');
+            const resultDiv = document.getElementById('result');
+            
+            // Validate all required fields
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('invalid');
+                    isValid = false;
+                } else {
+                    field.classList.remove('invalid');
+                    field.classList.add('valid');
+                }
+            });
+            
+            if (!isValid) {
+                resultDiv.innerHTML = '<strong>Error:</strong> Please fill in all required fields.';
+                resultDiv.className = 'result-error';
+                return;
+            }
+            
+            // Add loading state
+            button.classList.add('loading');
+            button.textContent = 'Processing Prediction...';
+            button.disabled = true;
+            resultDiv.innerHTML = '';
+            
+            const formData = new FormData(form);
+            
+            // Debug: Log form data
+            console.log('Submitting form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, ':', value);
+            }
+            
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Prediction response:', data);
+                
+                if (data.KTAS_expert_prediction !== undefined) {
+                    const ktasLevel = data.KTAS_expert_prediction;
+                    const ktasLabels = {
+                        1: 'Level 1 - Resuscitation (Immediate)',
+                        2: 'Level 2 - Emergent (≤15 minutes)', 
+                        3: 'Level 3 - Urgent (≤30 minutes)',
+                        4: 'Level 4 - Less Urgent (≤60 minutes)',
+                        5: 'Level 5 - Non-urgent (≤120 minutes)'
+                    };
+                    
+                    const ktasColors = {
+                        1: '#e74c3c', // Red
+                        2: '#f39c12', // Orange
+                        3: '#f1c40f', // Yellow
+                        4: '#2ecc71', // Green
+                        5: '#3498db'  // Blue
+                    };
+                    
+                    resultDiv.innerHTML = `
+                        <div><strong>Predicted KTAS Expert Level:</strong></div>
+                        <div class="ktas-result" style="background-color: ${ktasColors[ktasLevel]}20; border: 2px solid ${ktasColors[ktasLevel]}; color: ${ktasColors[ktasLevel]};">
+                            ${ktasLabels[ktasLevel] || `Level ${ktasLevel}`}
+                        </div>
+                        <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                            <strong>Clinical Priority:</strong> ${ktasLevel <= 2 ? 'Critical - Immediate attention required' : 
+                                                                ktasLevel === 3 ? 'Urgent - Prompt assessment needed' : 
+                                                                'Stable - Standard care pathway'}
+                        </div>
+                    `;
+                    resultDiv.className = 'result-success';
+                } else if (data.error) {
+                    resultDiv.innerHTML = `<strong>Prediction Error:</strong> ${data.error}`;
+                    resultDiv.className = 'result-error';
+                } else {
+                    resultDiv.innerHTML = '<strong>Error:</strong> Unexpected response format';
+                    resultDiv.className = 'result-error';
+                }
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                resultDiv.innerHTML = `<strong>Request Failed:</strong> ${err.message}. Please check your connection and try again.`;
+                resultDiv.className = 'result-error';
+            })
+            .finally(() => {
+                // Remove loading state
+                button.classList.remove('loading');
+                button.textContent = 'Predict KTAS Expert Level';
+                button.disabled = false;
+            });
+        });
+
+        // Real-time form validation
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            field.addEventListener('blur', function() {
+                if (this.hasAttribute('required')) {
+                    if (this.value.trim() && this.checkValidity()) {
+                        this.classList.remove('invalid');
+                        this.classList.add('valid');
+                    } else {
+                        this.classList.remove('valid');
+                        this.classList.add('invalid');
+                    }
+                }
+            });
+            
+            field.addEventListener('input', function() {
+                if (this.classList.contains('invalid') && this.value.trim()) {
+                    this.classList.remove('invalid');
+                }
+            });
+        });
+
+        // Auto-save form data to localStorage
+        const form = document.getElementById('predictionForm');
+        const formFields = form.querySelectorAll('input, select, textarea');
+        
+        // Load saved data
+        formFields.forEach(field => {
+            const savedValue = localStorage.getItem(`ktas_${field.name}`);
+            if (savedValue && savedValue !== 'null') {
+                field.value = savedValue;
+            }
+        });
+        
+        // Save data on change
+        formFields.forEach(field => {
+            field.addEventListener('change', function() {
+                localStorage.setItem(`ktas_${this.name}`, this.value);
+            });
+        });
+        
+        // Clear saved data button (optional)
+        function clearSavedData() {
+            formFields.forEach(field => {
+                localStorage.removeItem(`ktas_${field.name}`);
+            });
+            form.reset();
+            alert('Saved data cleared!');
+        }
+    </script>
+</body>
+</html>
