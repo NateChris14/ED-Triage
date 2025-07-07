@@ -4,9 +4,9 @@ matplotlib
 seaborn
 wordcloud
 flask
-pickle
 nltk
-sklearn
+scikit-learn
 openpyxl
 imblearn
 eli5
+gunicorn
