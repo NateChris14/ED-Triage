@@ -37,8 +37,8 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="Age" class="required">Age <span class="field-info">(years)</span></label>
-                            <input type="number" id="Age" name="Age" required min="0" max="120" step="1">
+                            <label for="Age" class="required">Age <span class="field-info">(20-90 years)</span></label>
+                            <input type="number" id="Age" name="Age" required min="20" max="90" step="1">
                         </div>
                     </div>
                 </div>
@@ -79,20 +79,20 @@
                     <h3 class="section-title">Vital Signs</h3>
                     <div class="form-grid">
                         <div class="form-group critical-field">
-                            <label for="SBP" class="required">Systolic BP <span class="field-info">(mmHg)</span></label>
-                            <input type="number" id="SBP" name="SBP" required min="50" max="300" step="1">
+                            <label for="SBP" class="required">Systolic BP <span class="field-info">(50-250 mmHg)</span></label>
+                            <input type="number" id="SBP" name="SBP" required min="50" max="250" step="1">
                         </div>
                         <div class="form-group critical-field">
-                            <label for="RR" class="required">Respiratory Rate <span class="field-info">(breaths/min)</span></label>
-                            <input type="number" id="RR" name="RR" required min="5" max="60" step="1">
+                            <label for="RR" class="required">Respiratory Rate <span class="field-info">(15-30 breaths/min)</span></label>
+                            <input type="number" id="RR" name="RR" required min="15" max="30" step="1">
                         </div>
                         <div class="form-group critical-field">
-                            <label for="BT" class="required">Body Temperature <span class="field-info">(°C)</span></label>
-                            <input type="number" id="BT" name="BT" required step="0.1" min="30" max="45">
+                            <label for="BT" class="required">Body Temperature <span class="field-info">(36.0-40.0°C)</span></label>
+                            <input type="number" id="BT" name="BT" required step="0.1" min="36.0" max="40.0">
                         </div>
                         <div class="form-group critical-field">
-                            <label for="Saturation" class="required">Oxygen Saturation <span class="field-info">(%)</span></label>
-                            <input type="number" id="Saturation" name="Saturation" required min="50" max="100" step="1">
+                            <label for="Saturation" class="required">Oxygen Saturation <span class="field-info">(20-100%)</span></label>
+                            <input type="number" id="Saturation" name="Saturation" required min="20" max="100" step="1">
                         </div>
                     </div>
                 </div>
@@ -162,11 +162,11 @@
                         </div>
                         <div class="form-group">
                             <label for="Length_of_stay_min" class="required">Length of Stay <span class="field-info">(minutes)</span></label>
-                            <input type="number" id="Length_of_stay_min" name="Length of stay_min" required min="0" step="1">
+                            <input type="number" id="Length_of_stay_min" name="Length of stay_min" required min="0" max="600000" step="1">
                         </div>
                         <div class="form-group">
                             <label for="KTAS_duration_min" class="required">KTAS Duration <span class="field-info">(minutes)</span></label>
-                            <input type="number" id="KTAS_duration_min" name="KTAS duration_min" required min="0" step="1">
+                            <input type="number" id="KTAS_duration_min" name="KTAS duration_min" required min="0" max="15" step="1">
                         </div>
                     </div>
                 </div>
@@ -324,15 +324,6 @@
                 localStorage.setItem(`ktas_${this.name}`, this.value);
             });
         });
-        
-        // Clear saved data button (optional)
-        function clearSavedData() {
-            formFields.forEach(field => {
-                localStorage.removeItem(`ktas_${field.name}`);
-            });
-            form.reset();
-            alert('Saved data cleared!');
-        }
     </script>
 </body>
 </html>

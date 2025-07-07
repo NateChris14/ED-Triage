@@ -74,46 +74,46 @@ def predict():
     try:
         data = request.form
 
-        # === 1. Extract structured features ===
+        # === 1. Extracting structured features ===
         input_dict = {col: [float(data[col])] for col in sig_feat}
         input_df = pd.DataFrame(input_dict)
 
-        # === 2. Extract and process text fields ===
+        # === 2. Extracting and processing text fields ===
         chief_raw = data['Chief_complain']
         diag_raw = data['Diagnosis in ED']
 
         chief_clean = preprocess_text(chief_raw)
         diag_clean = preprocess_text(diag_raw)
 
-        # === 3. TF-IDF transform ===
+        # === 3. TF-IDF transformation ===
         chief_vec = tfidf_chief.transform([chief_clean])
         diag_vec = tfidf_diag.transform([diag_clean])
 
 
-        # === 4. Combine TF-IDF vectors and apply SVD ===
+        # === 4. Combining TF-IDF vectors and applying SVD ===
         text_combined = np.hstack([chief_vec.toarray(), diag_vec.toarray()])
         text_reduced = svd.transform(text_combined)
         text_df = pd.DataFrame(text_reduced, columns=[f'svd_{i+1}' for i in range(50)])
 
 
-        # === 5. Scale structured data ===
+        # === 5. Scaling structured data ===
         input_scaled = scaler.transform(input_df[sig_feat])
         input_scaled_df = pd.DataFrame(input_scaled, columns=sig_feat)
 
-        # === 6. Combine scaled structured + reduced text ===
+        # === 6. Combining scaled structured + reduced text ===
         final_input = pd.concat([input_scaled_df.reset_index(drop=True), text_df], axis=1)
 
-        # Convert to a proper NumPy array of float32
-        final_input_np = final_input.to_numpy(dtype=np.float32)  # <--- ensures compatibility
+        # Convert to a proper NumPy array
+        final_input_np = final_input.to_numpy(dtype=np.float32)  
 
-        ## === 7. Predict ===
+        ## === 7. Predicting ===
         prediction = model.predict(final_input_np)
 
 
         return jsonify({'KTAS_expert_prediction': int(prediction[0])})
 
     except Exception as e:
-        print("ERROR during prediction:", e)  # This will print to terminal or Docker logs
+        print("ERROR during prediction:", e)  
         return jsonify({
         'error': str(e)
     })
