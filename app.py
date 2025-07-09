@@ -16,8 +16,6 @@ model = pickle.load(open('ed_model.pkl', 'rb'))
 scaler = pickle.load(open('scaler.pkl', 'rb'))
 with open('tf-idf-chief.pkl', 'rb') as f:
     tfidf_chief = pickle.load(f)
-with open('tf-idf-diag.pkl', 'rb') as f:
-    tfidf_diag = pickle.load(f)
 svd = pickle.load(open('truncated-svd.pkl', 'rb'))
 
 # === Flask app setup ===
@@ -61,8 +59,7 @@ def preprocess_text(text):
 # === List of important structured features ===
 sig_feat = [
     'Group', 'Sex', 'Age', 'Injury', 'Pain', 'NRS_pain', 'SBP',
-    'RR', 'BT', 'Saturation', 'KTAS_RN', 'Disposition',
-    'Error_group', 'Length of stay_min', 'KTAS duration_min', 'mistriage'
+    'RR', 'BT', 'Saturation', 'KTAS_RN'
 ]
 
 @app.route('/')
@@ -80,18 +77,15 @@ def predict():
 
         # === 2. Extracting and processing text fields ===
         chief_raw = data['Chief_complain']
-        diag_raw = data['Diagnosis in ED']
 
         chief_clean = preprocess_text(chief_raw)
-        diag_clean = preprocess_text(diag_raw)
 
         # === 3. TF-IDF transformation ===
         chief_vec = tfidf_chief.transform([chief_clean])
-        diag_vec = tfidf_diag.transform([diag_clean])
 
 
         # === 4. Combining TF-IDF vectors and applying SVD ===
-        text_combined = np.hstack([chief_vec.toarray(), diag_vec.toarray()])
+        text_combined = chief_vec.toarray()
         text_reduced = svd.transform(text_combined)
         text_df = pd.DataFrame(text_reduced, columns=[f'svd_{i+1}' for i in range(50)])
 

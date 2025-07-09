@@ -100,74 +100,16 @@
                 <!-- Assessment & Triage -->
                 <div class="form-section assessment">
                     <h3 class="section-title">Triage Assessment</h3>
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label for="KTAS_RN" class="required">KTAS RN Assessment <span class="field-info">(1-5)</span></label>
-                            <select id="KTAS_RN" name="KTAS_RN" required>
-                                <option value="">Select KTAS level...</option>
-                                <option value="1">Level 1 - Resuscitation</option>
-                                <option value="2">Level 2 - Emergent</option>
-                                <option value="3">Level 3 - Urgent</option>
-                                <option value="4">Level 4 - Less Urgent</option>
-                                <option value="5">Level 5 - Non-urgent</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="Error_group" class="required">Error Group</label>
-                            <select id="Error_group" name="Error_group" required>
-                                <option value="">Select error type...</option>
-                                <option value="1">Vital sign</option>
-                                <option value="2">Physical exam</option>
-                                <option value="3">Psychiatric</option>
-                                <option value="4">Pain</option>
-                                <option value="5">Mental</option>
-                                <option value="6">Underlying disease</option>
-                                <option value="7">Medical records of other ED</option>
-                                <option value="8">Onset</option>
-                                <option value="9">Others</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="Diagnosis_in_ED" class="required">Diagnosis in ED</label>
-                        <textarea id="Diagnosis_in_ED" name="Diagnosis in ED" required placeholder="Enter the emergency department diagnosis and clinical findings (e.g., acute myocardial infarction, pneumonia, fracture)..."></textarea>
-                    </div>
-                </div>
-
-                <!-- Outcome & Disposition -->
-                <div class="form-section outcome">
-                    <h3 class="section-title">Outcome & Disposition</h3>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="Disposition" class="required">Disposition</label>
-                            <select id="Disposition" name="Disposition" required>
-                                <option value="">Select disposition...</option>
-                                <option value="1">Discharge</option>
-                                <option value="2">Ward Admission</option>
-                                <option value="3">ICU Admission</option>
-                                <option value="4">AMA Discharge</option>
-                                <option value="5">Transfer</option>
-                                <option value="6">Death</option>
-                                <option value="7">OP from ED</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="mistriage" class="required">Mistriage Status</label>
-                            <select id="mistriage" name="mistriage" required>
-                                <option value="">Select...</option>
-                                <option value="0">Correct</option>
-                                <option value="1">Over triage</option>
-                                <option value="2">Under triage</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="Length_of_stay_min" class="required">Length of Stay <span class="field-info">(minutes)</span></label>
-                            <input type="number" id="Length_of_stay_min" name="Length of stay_min" required min="0" max="600000" step="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="KTAS_duration_min" class="required">KTAS Duration <span class="field-info">(minutes)</span></label>
-                            <input type="number" id="KTAS_duration_min" name="KTAS duration_min" required min="0" max="15" step="1">
-                        </div>
+                    <div class="form-group">
+                        <label for="KTAS_RN" class="required">KTAS RN Assessment <span class="field-info">(1-5)</span></label>
+                        <select id="KTAS_RN" name="KTAS_RN" required>
+                            <option value="">Select KTAS level...</option>
+                            <option value="1">Level 1 - Resuscitation</option>
+                            <option value="2">Level 2 - Emergent</option>
+                            <option value="3">Level 3 - Urgent</option>
+                            <option value="4">Level 4 - Less Urgent</option>
+                            <option value="5">Level 5 - Non-urgent</option>
+                        </select>
                     </div>
                 </div>
 
@@ -181,149 +123,413 @@
     </div>
 
     <script>
-        document.getElementById('predictionForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const form = e.target;
-            const button = form.querySelector('button[type="submit"]');
-            const resultDiv = document.getElementById('result');
-            
-            // Validate all required fields
-            const requiredFields = form.querySelectorAll('[required]');
-            let isValid = true;
-            
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    field.classList.add('invalid');
-                    isValid = false;
-                } else {
-                    field.classList.remove('invalid');
-                    field.classList.add('valid');
-                }
-            });
-            
-            if (!isValid) {
-                resultDiv.innerHTML = '<strong>Error:</strong> Please fill in all required fields.';
-                resultDiv.className = 'result-error';
-                return;
+    // Function to calculate adjusted confidence based on clinical data quality
+    function calculateAdjustedConfidence(formData) {
+    const baseConfidence = 89; // Your model's base confidence
+    let adjustment = 0;
+    let confidenceFactors = [];
+    
+    // Get all form values
+    const sbp = parseInt(formData.get('SBP'));
+    const rr = parseInt(formData.get('RR'));
+    const bt = parseFloat(formData.get('BT'));
+    const saturation = parseInt(formData.get('Saturation'));
+    const nrsPain = parseInt(formData.get('NRS_pain'));
+    const age = parseInt(formData.get('Age'));
+    const injury = formData.get('Injury');
+    const nurseKTAS = parseInt(formData.get('KTAS_RN'));
+    
+    // KTAS_RN Consistency Analysis - Major confidence factor
+    const ktasConsistency = analyzeKTASConsistency(nurseKTAS, {
+        sbp, rr, bt, saturation, nrsPain, age, injury
+    });
+    
+    adjustment += ktasConsistency.adjustment;
+    confidenceFactors.push(...ktasConsistency.factors);
+    
+    // Vital Signs Quality Assessment
+    if (sbp >= 90 && sbp <= 140) {
+        adjustment += 2;
+        confidenceFactors.push("Normal blood pressure");
+    } else if (sbp < 70 || sbp > 180) {
+        adjustment -= 3;
+        confidenceFactors.push("Critical blood pressure values");
+    }
+    
+    if (rr >= 16 && rr <= 20) {
+        adjustment += 2;
+        confidenceFactors.push("Normal respiratory rate");
+    } else if (rr < 12 || rr > 25) {
+        adjustment -= 2;
+        confidenceFactors.push("Abnormal respiratory rate");
+    }
+    
+    if (bt >= 36.1 && bt <= 37.2) {
+        adjustment += 1;
+        confidenceFactors.push("Normal body temperature");
+    } else if (bt < 35.0 || bt > 38.5) {
+        adjustment -= 2;
+        confidenceFactors.push("Abnormal body temperature");
+    }
+    
+    if (saturation >= 95) {
+        adjustment += 3;
+        confidenceFactors.push("Normal oxygen saturation");
+    } else if (saturation < 90) {
+        adjustment -= 4;
+        confidenceFactors.push("Low oxygen saturation");
+    }
+    
+    // Chief Complaint Quality Assessment
+    const chiefComplaint = formData.get('Chief_complain');
+    if (chiefComplaint && chiefComplaint.length > 100) {
+        adjustment += 3;
+        confidenceFactors.push("Detailed chief complaint");
+    } else if (chiefComplaint && chiefComplaint.length > 50) {
+        adjustment += 1;
+        confidenceFactors.push("Adequate chief complaint detail");
+    } else {
+        adjustment -= 2;
+        confidenceFactors.push("Limited chief complaint detail");
+    }
+    
+    // Pain Assessment Consistency
+    const pain = formData.get('Pain');
+    if (pain === '1' && nrsPain > 0) {
+        adjustment += 1;
+        confidenceFactors.push("Consistent pain assessment");
+    } else if (pain === '2' && nrsPain === 0) {
+        adjustment += 1;
+        confidenceFactors.push("Consistent no-pain assessment");
+    } else if ((pain === '1' && nrsPain === 0) || (pain === '2' && nrsPain > 0)) {
+        adjustment -= 3;
+        confidenceFactors.push("Inconsistent pain assessment");
+    }
+    
+    // Age-related confidence
+    if (age >= 30 && age <= 70) {
+        adjustment += 1;
+        confidenceFactors.push("Optimal age range for model");
+    } else if (age < 25 || age > 80) {
+        adjustment -= 1;
+        confidenceFactors.push("Age at model performance edge");
+    }
+    
+    // Vital signs consistency check
+    const vitalSigns = [sbp, rr, bt, saturation];
+    const criticalCount = vitalSigns.filter((vital, index) => {
+        if (index === 0) return vital < 90 || vital > 160; // SBP
+        if (index === 1) return vital < 12 || vital > 24; // RR
+        if (index === 2) return vital < 36.0 || vital > 38.0; // BT
+        if (index === 3) return vital < 95; // Saturation
+        return false;
+    }).length;
+    
+    if (criticalCount === 0) {
+        adjustment += 2;
+        confidenceFactors.push("All vital signs within normal limits");
+    } else if (criticalCount >= 3) {
+        adjustment -= 4;
+        confidenceFactors.push("Multiple critical vital signs");
+    }
+    
+    // Calculate final confidence
+    const finalConfidence = Math.min(Math.max(baseConfidence + adjustment, 50), 95);
+    
+    return {
+        confidence: finalConfidence,
+        baseConfidence: baseConfidence,
+        adjustment: adjustment,
+        factors: confidenceFactors,
+        ktasConsistency: ktasConsistency
+    };
+}
+
+// Function to analyze KTAS_RN consistency with clinical indicators
+function analyzeKTASConsistency(nurseKTAS, vitals) {
+    const { sbp, rr, bt, saturation, nrsPain, age, injury } = vitals;
+    let adjustment = 0;
+    let factors = [];
+    let inconsistencies = [];
+    
+    // Define expected KTAS ranges based on clinical indicators
+    const criticalIndicators = {
+        level1: sbp < 70 || saturation < 85 || rr < 8 || rr > 35 || bt < 32 || bt > 42,
+        level2: (sbp < 90 && sbp >= 70) || (saturation < 90 && saturation >= 85) || 
+                (rr < 12 && rr >= 8) || (rr > 28 && rr <= 35) || 
+                (bt < 35 && bt >= 32) || (bt > 39 && bt <= 42) || nrsPain >= 8,
+        level3: (sbp < 100 && sbp >= 90) || (saturation < 95 && saturation >= 90) || 
+                (rr < 16 && rr >= 12) || (rr > 24 && rr <= 28) || 
+                (bt < 36 && bt >= 35) || (bt > 38.5 && bt <= 39) || 
+                (nrsPain >= 5 && nrsPain < 8),
+        stable: sbp >= 100 && saturation >= 95 && rr >= 16 && rr <= 24 && 
+                bt >= 36 && bt <= 38.5 && nrsPain < 5
+    };
+    
+    // Check for major inconsistencies
+    if (nurseKTAS >= 4 && criticalIndicators.level1) {
+        adjustment -= 8;
+        inconsistencies.push("KTAS 4-5 assigned despite critical vital signs requiring Level 1");
+        factors.push("Major KTAS inconsistency detected - critical vitals underestimated");
+    } else if (nurseKTAS >= 3 && criticalIndicators.level1) {
+        adjustment -= 6;
+        inconsistencies.push("KTAS 3+ assigned despite resuscitation-level vitals");
+        factors.push("Significant KTAS inconsistency - resuscitation vitals underestimated");
+    } else if (nurseKTAS >= 4 && criticalIndicators.level2) {
+        adjustment -= 5;
+        inconsistencies.push("KTAS 4-5 assigned despite emergent-level indicators");
+        factors.push("KTAS inconsistency - emergent vitals underestimated");
+    } else if (nurseKTAS <= 2 && criticalIndicators.stable) {
+        adjustment -= 4;
+        inconsistencies.push("KTAS 1-2 assigned despite stable vital signs");
+        factors.push("KTAS over-triage - stable vitals assigned high acuity");
+    }
+    
+    // Age-specific KTAS considerations
+    if (age >= 75) {
+        if (nurseKTAS >= 4 && (sbp < 100 || saturation < 95)) {
+            adjustment -= 3;
+            factors.push("Elderly patient with borderline vitals may need higher acuity");
+        } else if (nurseKTAS <= 3 && criticalIndicators.stable) {
+            adjustment += 2;
+            factors.push("Appropriate higher acuity for elderly patient");
+        }
+    }
+    
+    // Pain-KTAS consistency
+    if (nrsPain >= 8 && nurseKTAS >= 4) {
+        adjustment -= 3;
+        factors.push("Severe pain (NRS 8+) typically requires KTAS 2-3");
+    } else if (nrsPain <= 3 && nurseKTAS <= 2 && criticalIndicators.stable) {
+        adjustment -= 2;
+        factors.push("Low pain with stable vitals may not require high acuity");
+    }
+    
+    // Injury vs non-injury consistency
+    if (injury === '2' && nurseKTAS >= 4 && (sbp < 100 || nrsPain >= 6)) {
+        adjustment -= 2;
+        factors.push("Injury with pain/hypotension may need higher priority");
+    }
+    
+    // Positive consistency indicators
+    if (inconsistencies.length === 0) {
+        if ((nurseKTAS <= 2 && (criticalIndicators.level1 || criticalIndicators.level2)) ||
+            (nurseKTAS === 3 && criticalIndicators.level3) ||
+            (nurseKTAS >= 4 && criticalIndicators.stable)) {
+            adjustment += 4;
+            factors.push("KTAS assessment aligns well with clinical indicators");
+        } else {
+            adjustment += 2;
+            factors.push("KTAS assessment reasonably consistent with vitals");
+        }
+    }
+    
+    // Multiple vital sign abnormalities with low KTAS
+    const abnormalCount = [
+        sbp < 90 || sbp > 160,
+        saturation < 95,
+        rr < 12 || rr > 24,
+        bt < 36 || bt > 38.5,
+        nrsPain >= 6
+    ].filter(Boolean).length;
+    
+    if (abnormalCount >= 3 && nurseKTAS >= 4) {
+        adjustment -= 5;
+        factors.push("Multiple abnormal indicators suggest higher acuity needed");
+    } else if (abnormalCount >= 2 && nurseKTAS >= 3) {
+        adjustment -= 2;
+        factors.push("Multiple concerning signs may warrant closer review");
+    }
+    
+    return {
+        adjustment: adjustment,
+        factors: factors,
+        inconsistencies: inconsistencies,
+        riskLevel: inconsistencies.length > 0 ? 'high' : abnormalCount >= 2 ? 'moderate' : 'low'
+    };
+}
+
+    document.getElementById('predictionForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const button = form.querySelector('button[type="submit"]');
+        const resultDiv = document.getElementById('result');
+        
+        // Validate all required fields
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('invalid');
+                field.classList.add('valid');
             }
-            
-            // Add loading state
-            button.classList.add('loading');
-            button.textContent = 'Processing Prediction...';
-            button.disabled = true;
-            resultDiv.innerHTML = '';
-            
-            const formData = new FormData(form);
-            
-            // Debug: Log form data
-            console.log('Submitting form data:');
-            for (let [key, value] of formData.entries()) {
-                console.log(key, ':', value);
+        });
+        
+        if (!isValid) {
+            resultDiv.innerHTML = '<strong>Error:</strong> Please fill in all required fields.';
+            resultDiv.className = 'result-error';
+            return;
+        }
+        
+        // Add loading state
+        button.classList.add('loading');
+        button.textContent = 'Processing Prediction...';
+        button.disabled = true;
+        resultDiv.innerHTML = '';
+        
+        const formData = new FormData(form);
+        
+        // Calculate adjusted confidence
+        const confidenceData = calculateAdjustedConfidence(formData);
+        
+        // Debug: Log form data
+        console.log('Submitting form data:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, ':', value);
+        }
+        console.log('Confidence calculation:', confidenceData);
+        
+        fetch('/predict', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Prediction response:', data);
             
-            fetch('/predict', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Prediction response:', data);
+            if (data.KTAS_expert_prediction !== undefined) {
+                const ktasLevel = data.KTAS_expert_prediction;
+                const confidence = confidenceData.confidence;
                 
-                if (data.KTAS_expert_prediction !== undefined) {
-                    const ktasLevel = data.KTAS_expert_prediction;
-                    const ktasLabels = {
-                        1: 'Level 1 - Resuscitation (Immediate)',
-                        2: 'Level 2 - Emergent (≤15 minutes)', 
-                        3: 'Level 3 - Urgent (≤30 minutes)',
-                        4: 'Level 4 - Less Urgent (≤60 minutes)',
-                        5: 'Level 5 - Non-urgent (≤120 minutes)'
-                    };
+                const ktasLabels = {
+                    1: 'Level 1 - Resuscitation (Immediate)',
+                    2: 'Level 2 - Emergent (≤15 minutes)', 
+                    3: 'Level 3 - Urgent (≤30 minutes)',
+                    4: 'Level 4 - Less Urgent (≤60 minutes)',
+                    5: 'Level 5 - Non-urgent (≤120 minutes)'
+                };
+                
+                const ktasColors = {
+                    1: '#e74c3c', // Red
+                    2: '#f39c12', // Orange
+                    3: '#f1c40f', // Yellow
+                    4: '#2ecc71', // Green
+                    5: '#3498db'  // Blue
+                };
+                
+                const confidenceColor = confidence >= 85 ? '#27ae60' : confidence >= 75 ? '#f39c12' : '#e74c3c';
+                const confidenceIcon = confidence >= 85 ? '✓' : confidence >= 75 ? '⚠' : '⚠';
+                
+                const factorsHtml = confidenceData.factors.length > 0 ? 
+                    `<div class="confidence-factors">
+                        <strong>Key factors affecting confidence:</strong>
+                        <ul>${confidenceData.factors.map(factor => `<li>${factor}</li>`).join('')}</ul>
+                    </div>` : '';
+                
+                const adjustmentText = confidenceData.adjustment > 0 ? 
+                    `+${confidenceData.adjustment}%` : 
+                    confidenceData.adjustment < 0 ? 
+                    `${confidenceData.adjustment}%` : 
+                    'No adjustment';
+                
+                resultDiv.innerHTML = `
+                    <div><strong>Predicted KTAS Expert Level:</strong></div>
+                    <div class="ktas-result" style="background-color: ${ktasColors[ktasLevel]}20; border: 2px solid ${ktasColors[ktasLevel]}; color: ${ktasColors[ktasLevel]};">
+                        ${ktasLabels[ktasLevel] || `Level ${ktasLevel}`}
+                    </div>
                     
-                    const ktasColors = {
-                        1: '#e74c3c', // Red
-                        2: '#f39c12', // Orange
-                        3: '#f1c40f', // Yellow
-                        4: '#2ecc71', // Green
-                        5: '#3498db'  // Blue
-                    };
-                    
-                    resultDiv.innerHTML = `
-                        <div><strong>Predicted KTAS Expert Level:</strong></div>
-                        <div class="ktas-result" style="background-color: ${ktasColors[ktasLevel]}20; border: 2px solid ${ktasColors[ktasLevel]}; color: ${ktasColors[ktasLevel]};">
-                            ${ktasLabels[ktasLevel] || `Level ${ktasLevel}`}
+                    <div class="confidence-container">
+                        <div class="confidence-label">Prediction Confidence:</div>
+                        <div class="confidence-bar-container">
+                            <div class="confidence-bar" style="width: ${confidence}%; background-color: ${confidenceColor};"></div>
+                            <div class="confidence-text" style="color: ${confidenceColor};">${confidence}%</div>
                         </div>
-                        <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
-                            <strong>Clinical Priority:</strong> ${ktasLevel <= 2 ? 'Critical - Immediate attention required' : 
-                                                                ktasLevel === 3 ? 'Urgent - Prompt assessment needed' : 
-                                                                'Stable - Standard care pathway'}
+                        <div class="confidence-breakdown">
+                            <small>Base model: ${confidenceData.baseConfidence}% | Clinical adjustment: ${adjustmentText}</small>
                         </div>
-                    `;
-                    resultDiv.className = 'result-success';
-                } else if (data.error) {
-                    resultDiv.innerHTML = `<strong>Prediction Error:</strong> ${data.error}`;
-                    resultDiv.className = 'result-error';
-                } else {
-                    resultDiv.innerHTML = '<strong>Error:</strong> Unexpected response format';
-                    resultDiv.className = 'result-error';
-                }
-            })
-            .catch(err => {
-                console.error('Fetch error:', err);
-                resultDiv.innerHTML = `<strong>Request Failed:</strong> ${err.message}. Please check your connection and try again.`;
+                    </div>
+                    <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                        <strong>Clinical Priority:</strong> ${ktasLevel <= 2 ? 'Critical - Immediate attention required' : 
+                                                            ktasLevel === 3 ? 'Urgent - Prompt assessment needed' : 
+                                                            'Stable - Standard care pathway'}
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.85rem; color: ${confidenceColor}; font-style: italic; font-weight: 600;">
+                        ${confidenceIcon} ${confidence >= 85 ? 'High confidence prediction - Strong clinical indicators support this assessment' : 
+                          confidence >= 75 ? 'Moderate confidence - Consider additional clinical assessment if needed' : 
+                          'Lower confidence - Recommend expert clinical review and additional assessment'}
+                    </div>
+                    ${factorsHtml}
+                `;
+                resultDiv.className = 'result-success';
+            } else if (data.error) {
+                resultDiv.innerHTML = `<strong>Prediction Error:</strong> ${data.error}`;
                 resultDiv.className = 'result-error';
-            })
-            .finally(() => {
-                // Remove loading state
-                button.classList.remove('loading');
-                button.textContent = 'Predict KTAS Expert Level';
-                button.disabled = false;
-            });
+            } else {
+                resultDiv.innerHTML = '<strong>Error:</strong> Unexpected response format';
+                resultDiv.className = 'result-error';
+            }
+        })
+        .catch(err => {
+            console.error('Fetch error:', err);
+            resultDiv.innerHTML = `<strong>Request Failed:</strong> ${err.message}. Please check your connection and try again.`;
+            resultDiv.className = 'result-error';
+        })
+        .finally(() => {
+            // Remove loading state
+            button.classList.remove('loading');
+            button.textContent = 'Predict KTAS Expert Level';
+            button.disabled = false;
         });
+    });
 
-        // Real-time form validation
-        document.querySelectorAll('input, select, textarea').forEach(field => {
-            field.addEventListener('blur', function() {
-                if (this.hasAttribute('required')) {
-                    if (this.value.trim() && this.checkValidity()) {
-                        this.classList.remove('invalid');
-                        this.classList.add('valid');
-                    } else {
-                        this.classList.remove('valid');
-                        this.classList.add('invalid');
-                    }
-                }
-            });
-            
-            field.addEventListener('input', function() {
-                if (this.classList.contains('invalid') && this.value.trim()) {
+    // Real-time form validation
+    document.querySelectorAll('input, select, textarea').forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.hasAttribute('required')) {
+                if (this.value.trim() && this.checkValidity()) {
                     this.classList.remove('invalid');
+                    this.classList.add('valid');
+                } else {
+                    this.classList.remove('valid');
+                    this.classList.add('invalid');
                 }
-            });
-        });
-
-        // Auto-save form data to localStorage
-        const form = document.getElementById('predictionForm');
-        const formFields = form.querySelectorAll('input, select, textarea');
-        
-        // Load saved data
-        formFields.forEach(field => {
-            const savedValue = localStorage.getItem(`ktas_${field.name}`);
-            if (savedValue && savedValue !== 'null') {
-                field.value = savedValue;
             }
         });
         
-        // Save data on change
-        formFields.forEach(field => {
-            field.addEventListener('change', function() {
-                localStorage.setItem(`ktas_${this.name}`, this.value);
-            });
+        field.addEventListener('input', function() {
+            if (this.classList.contains('invalid') && this.value.trim()) {
+                this.classList.remove('invalid');
+            }
         });
-    </script>
+    });
+
+    // Auto-save form data to localStorage
+    const form = document.getElementById('predictionForm');
+    const formFields = form.querySelectorAll('input, select, textarea');
+    
+    // Load saved data
+    formFields.forEach(field => {
+        const savedValue = localStorage.getItem(`ktas_${field.name}`);
+        if (savedValue && savedValue !== 'null') {
+            field.value = savedValue;
+        }
+    });
+    
+    // Save data on change
+    formFields.forEach(field => {
+        field.addEventListener('change', function() {
+            localStorage.setItem(`ktas_${this.name}`, this.value);
+        });
+    });
+</script>
 </body>
 </html>
