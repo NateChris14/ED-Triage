@@ -125,7 +125,7 @@
     <script>
     // Function to calculate adjusted confidence based on clinical data quality
     function calculateAdjustedConfidence(formData) {
-    const baseConfidence = 89; // Your model's base confidence
+    const baseConfidence = 89; // model's base confidence
     let adjustment = 0;
     let confidenceFactors = [];
     
@@ -233,7 +233,7 @@
         confidenceFactors.push("Multiple critical vital signs");
     }
     
-    // Calculate final confidence
+    // Calculating final confidence
     const finalConfidence = Math.min(Math.max(baseConfidence + adjustment, 50), 95);
     
     return {
@@ -252,7 +252,7 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
     let factors = [];
     let inconsistencies = [];
     
-    // Define expected KTAS ranges based on clinical indicators
+    // expected KTAS ranges based on clinical indicators
     const criticalIndicators = {
         level1: sbp < 70 || saturation < 85 || rr < 8 || rr > 35 || bt < 32 || bt > 42,
         level2: (sbp < 90 && sbp >= 70) || (saturation < 90 && saturation >= 85) || 
@@ -266,7 +266,7 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
                 bt >= 36 && bt <= 38.5 && nrsPain < 5
     };
     
-    // Check for major inconsistencies
+    // Checking for major inconsistencies
     if (nurseKTAS >= 4 && criticalIndicators.level1) {
         adjustment -= 8;
         inconsistencies.push("KTAS 4-5 assigned despite critical vital signs requiring Level 1");
@@ -355,7 +355,7 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
         const button = form.querySelector('button[type="submit"]');
         const resultDiv = document.getElementById('result');
         
-        // Validate all required fields
+        // Validating all required fields
         const requiredFields = form.querySelectorAll('[required]');
         let isValid = true;
         
@@ -375,7 +375,7 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
             return;
         }
         
-        // Add loading state
+        // Adding loading state
         button.classList.add('loading');
         button.textContent = 'Processing Prediction...';
         button.disabled = true;
@@ -383,7 +383,7 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
         
         const formData = new FormData(form);
         
-        // Calculate adjusted confidence
+        // Calculating adjusted confidence
         const confidenceData = calculateAdjustedConfidence(formData);
         
         // Debug: Log form data
