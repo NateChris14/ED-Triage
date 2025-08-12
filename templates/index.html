@@ -408,8 +408,8 @@
                     5: '#3498db'  // Blue
                 };
                 
-                const confidenceColor = confidence >= 85 ? '#27ae60' : confidence >= 75 ? '#f39c12' : '#e74c3c';
-                const confidenceIcon = confidence >= 85 ? '✓' : confidence >= 75 ? '⚠' : '⚠';
+                const confidenceColor = confidence >= 85 ? '#27ae60' : confidence >= 80 ? '#f39c12' : '#e74c3c';
+                const confidenceIcon = confidence >= 85 ? '✓' : confidence >= 80 ? '⚠' : '⚠';
                 
                 const factorsHtml = confidenceData.factors.length > 0 ? 
                     `<div class="confidence-factors">
@@ -430,13 +430,13 @@
                     </div>` : '';
                 
                 resultDiv.innerHTML = `
-                    <div><strong>Predicted KTAS Expert Level:</strong></div>
+                    <div><strong>AI-refined KTAS Expert Level:</strong></div>
                     <div class="ktas-result" style="background-color: ${ktasColors[ktasLevel]}20; border: 2px solid ${ktasColors[ktasLevel]}; color: ${ktasColors[ktasLevel]};">
                         ${ktasLabels[ktasLevel] || `Level ${ktasLevel}`}
                     </div>
                     
                     <div class="confidence-container">
-                        <div class="confidence-label">Prediction Confidence:</div>
+                        <div class="confidence-label">Refinement Confidence:</div>
                         <div class="confidence-bar-container">
                             <div class="confidence-bar" style="width: ${confidence}%; background-color: ${confidenceColor};"></div>
                             <div class="confidence-text" style="color: ${confidenceColor};">${confidence}%</div>
@@ -452,7 +452,7 @@
                                                             'Stable - Standard care pathway'}
                     </div>
                     <div style="margin-top: 10px; font-size: 0.85rem; color: ${confidenceColor}; font-style: italic; font-weight: 600;">
-                        ${confidenceIcon} ${confidence >= 85 ? 'High confidence prediction - Strong clinical indicators support this assessment' : 
+                        ${confidenceIcon} ${confidence >= 85 ? 'High confidence refinement - Strong clinical indicators support this assessment' : 
                           confidence >= 75 ? 'Moderate confidence - Consider additional clinical assessment if needed' : 
                           'Lower confidence - Recommend expert clinical review and additional assessment'}
                     </div>
