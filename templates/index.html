@@ -114,7 +114,7 @@
                 </div>
 
                 <div class="btn-container">
-                    <button type="submit">Predict KTAS Expert Level</button>
+                    <button type="submit">GET AI REFINEMENT</button>
                 </div>
             </form>
             
@@ -359,7 +359,7 @@
         
         // Adding loading state
         button.classList.add('loading');
-        button.textContent = 'Processing Prediction...';
+        button.textContent = 'Processing...';
         button.disabled = true;
         resultDiv.innerHTML = '';
         
@@ -475,7 +475,7 @@
         .finally(() => {
             // Remove loading state
             button.classList.remove('loading');
-            button.textContent = 'Predict KTAS Expert Level';
+            button.textContent = 'GET AI REFINEMENT';
             button.disabled = false;
         });
     });
