@@ -408,8 +408,8 @@
                     5: '#3498db'  // Blue
                 };
                 
-                const confidenceColor = confidence >= 85 ? '#27ae60' : confidence >= 80 ? '#f39c12' : '#e74c3c';
-                const confidenceIcon = confidence >= 85 ? '✓' : confidence >= 80 ? '⚠' : '⚠';
+                const confidenceColor = confidence >= 85 ? '#27ae60' : confidence >= 75 ? '#f39c12' : '#e74c3c';
+                const confidenceIcon = confidence >= 85 ? '✓' : confidence >= 75 ? '⚠' : '⚠';
                 
                 const factorsHtml = confidenceData.factors.length > 0 ? 
                     `<div class="confidence-factors">
