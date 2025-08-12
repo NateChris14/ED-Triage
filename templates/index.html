@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KTAS Expert Prediction System</title>
+    <title>KTAS Expert Level Refinement System</title>
     <link rel="stylesheet" href="static/styles.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>KTAS Expert Level Prediction</h1>
+            <h1>KTAS Expert Level Suggestion</h1>
             <p>Korean Triage and Acuity Scale Assessment Tool</p>
             <div class="subtitle">Emergency Department Clinical Decision Support</div>
         </div>
@@ -125,229 +125,211 @@
     <script>
     // Function to calculate adjusted confidence based on clinical data quality
     function calculateAdjustedConfidence(formData) {
-    const baseConfidence = 89; // model's base confidence
-    let adjustment = 0;
-    let confidenceFactors = [];
-    
-    // Get all form values
-    const sbp = parseInt(formData.get('SBP'));
-    const rr = parseInt(formData.get('RR'));
-    const bt = parseFloat(formData.get('BT'));
-    const saturation = parseInt(formData.get('Saturation'));
-    const nrsPain = parseInt(formData.get('NRS_pain'));
-    const age = parseInt(formData.get('Age'));
-    const injury = formData.get('Injury');
-    const nurseKTAS = parseInt(formData.get('KTAS_RN'));
-    
-    // KTAS_RN Consistency Analysis - Major confidence factor
-    const ktasConsistency = analyzeKTASConsistency(nurseKTAS, {
-        sbp, rr, bt, saturation, nrsPain, age, injury
-    });
-    
-    adjustment += ktasConsistency.adjustment;
-    confidenceFactors.push(...ktasConsistency.factors);
-    
-    // Vital Signs Quality Assessment
-    if (sbp >= 90 && sbp <= 140) {
-        adjustment += 2;
-        confidenceFactors.push("Normal blood pressure");
-    } else if (sbp < 70 || sbp > 180) {
-        adjustment -= 3;
-        confidenceFactors.push("Critical blood pressure values");
-    }
-    
-    if (rr >= 16 && rr <= 20) {
-        adjustment += 2;
-        confidenceFactors.push("Normal respiratory rate");
-    } else if (rr < 12 || rr > 25) {
-        adjustment -= 2;
-        confidenceFactors.push("Abnormal respiratory rate");
-    }
-    
-    if (bt >= 36.1 && bt <= 37.2) {
-        adjustment += 1;
-        confidenceFactors.push("Normal body temperature");
-    } else if (bt < 35.0 || bt > 38.5) {
-        adjustment -= 2;
-        confidenceFactors.push("Abnormal body temperature");
-    }
-    
-    if (saturation >= 95) {
-        adjustment += 3;
-        confidenceFactors.push("Normal oxygen saturation");
-    } else if (saturation < 90) {
-        adjustment -= 4;
-        confidenceFactors.push("Low oxygen saturation");
-    }
-    
-    // Chief Complaint Quality Assessment
-    const chiefComplaint = formData.get('Chief_complain');
-    if (chiefComplaint && chiefComplaint.length > 100) {
-        adjustment += 3;
-        confidenceFactors.push("Detailed chief complaint");
-    } else if (chiefComplaint && chiefComplaint.length > 50) {
-        adjustment += 1;
-        confidenceFactors.push("Adequate chief complaint detail");
-    } else {
-        adjustment -= 2;
-        confidenceFactors.push("Limited chief complaint detail");
-    }
-    
-    // Pain Assessment Consistency
-    const pain = formData.get('Pain');
-    if (pain === '1' && nrsPain > 0) {
-        adjustment += 1;
-        confidenceFactors.push("Consistent pain assessment");
-    } else if (pain === '2' && nrsPain === 0) {
-        adjustment += 1;
-        confidenceFactors.push("Consistent no-pain assessment");
-    } else if ((pain === '1' && nrsPain === 0) || (pain === '2' && nrsPain > 0)) {
-        adjustment -= 3;
-        confidenceFactors.push("Inconsistent pain assessment");
-    }
-    
-    // Age-related confidence
-    if (age >= 30 && age <= 70) {
-        adjustment += 1;
-        confidenceFactors.push("Optimal age range for model");
-    } else if (age < 25 || age > 80) {
-        adjustment -= 1;
-        confidenceFactors.push("Age at model performance edge");
-    }
-    
-    // Vital signs consistency check
-    const vitalSigns = [sbp, rr, bt, saturation];
-    const criticalCount = vitalSigns.filter((vital, index) => {
-        if (index === 0) return vital < 90 || vital > 160; // SBP
-        if (index === 1) return vital < 12 || vital > 24; // RR
-        if (index === 2) return vital < 36.0 || vital > 38.0; // BT
-        if (index === 3) return vital < 95; // Saturation
-        return false;
-    }).length;
-    
-    if (criticalCount === 0) {
-        adjustment += 2;
-        confidenceFactors.push("All vital signs within normal limits");
-    } else if (criticalCount >= 3) {
-        adjustment -= 4;
-        confidenceFactors.push("Multiple critical vital signs");
-    }
-    
-    // Calculating final confidence
-    const finalConfidence = Math.min(Math.max(baseConfidence + adjustment, 50), 95);
-    
-    return {
-        confidence: finalConfidence,
-        baseConfidence: baseConfidence,
-        adjustment: adjustment,
-        factors: confidenceFactors,
-        ktasConsistency: ktasConsistency
-    };
-}
-
-// Function to analyze KTAS_RN consistency with clinical indicators
-function analyzeKTASConsistency(nurseKTAS, vitals) {
-    const { sbp, rr, bt, saturation, nrsPain, age, injury } = vitals;
-    let adjustment = 0;
-    let factors = [];
-    let inconsistencies = [];
-    
-    // expected KTAS ranges based on clinical indicators
-    const criticalIndicators = {
-        level1: sbp < 70 || saturation < 85 || rr < 8 || rr > 35 || bt < 32 || bt > 42,
-        level2: (sbp < 90 && sbp >= 70) || (saturation < 90 && saturation >= 85) || 
-                (rr < 12 && rr >= 8) || (rr > 28 && rr <= 35) || 
-                (bt < 35 && bt >= 32) || (bt > 39 && bt <= 42) || nrsPain >= 8,
-        level3: (sbp < 100 && sbp >= 90) || (saturation < 95 && saturation >= 90) || 
-                (rr < 16 && rr >= 12) || (rr > 24 && rr <= 28) || 
-                (bt < 36 && bt >= 35) || (bt > 38.5 && bt <= 39) || 
-                (nrsPain >= 5 && nrsPain < 8),
-        stable: sbp >= 100 && saturation >= 95 && rr >= 16 && rr <= 24 && 
-                bt >= 36 && bt <= 38.5 && nrsPain < 5
-    };
-    
-    // Checking for major inconsistencies
-    if (nurseKTAS >= 4 && criticalIndicators.level1) {
-        adjustment -= 8;
-        inconsistencies.push("KTAS 4-5 assigned despite critical vital signs requiring Level 1");
-        factors.push("Major KTAS inconsistency detected - critical vitals underestimated");
-    } else if (nurseKTAS >= 3 && criticalIndicators.level1) {
-        adjustment -= 6;
-        inconsistencies.push("KTAS 3+ assigned despite resuscitation-level vitals");
-        factors.push("Significant KTAS inconsistency - resuscitation vitals underestimated");
-    } else if (nurseKTAS >= 4 && criticalIndicators.level2) {
-        adjustment -= 5;
-        inconsistencies.push("KTAS 4-5 assigned despite emergent-level indicators");
-        factors.push("KTAS inconsistency - emergent vitals underestimated");
-    } else if (nurseKTAS <= 2 && criticalIndicators.stable) {
-        adjustment -= 4;
-        inconsistencies.push("KTAS 1-2 assigned despite stable vital signs");
-        factors.push("KTAS over-triage - stable vitals assigned high acuity");
-    }
-    
-    // Age-specific KTAS considerations
-    if (age >= 75) {
-        if (nurseKTAS >= 4 && (sbp < 100 || saturation < 95)) {
-            adjustment -= 3;
-            factors.push("Elderly patient with borderline vitals may need higher acuity");
-        } else if (nurseKTAS <= 3 && criticalIndicators.stable) {
-            adjustment += 2;
-            factors.push("Appropriate higher acuity for elderly patient");
+        const baseConfidence = 89; // Model's base confidence
+        let adjustment = 0;
+        let confidenceFactors = [];
+        
+        // Getting all form values
+        const sbp = parseInt(formData.get('SBP'));
+        const rr = parseInt(formData.get('RR'));
+        const bt = parseFloat(formData.get('BT'));
+        const saturation = parseInt(formData.get('Saturation'));
+        const nrsPain = parseInt(formData.get('NRS_pain'));
+        const age = parseInt(formData.get('Age'));
+        const injury = formData.get('Injury');
+        const nurseKTAS = parseInt(formData.get('KTAS_RN'));
+        
+        // KTAS_RN Consistency Analysis
+        const ktasConsistency = analyzeKTASConsistency(nurseKTAS, {
+            sbp, rr, bt, saturation, nrsPain, age, injury
+        });
+        
+        adjustment += ktasConsistency.adjustment;
+        confidenceFactors.push(...ktasConsistency.factors);
+        
+        // Vital Signs Quality Assessment
+        if (sbp >= 90 && sbp <= 140) {
+            adjustment += 1;
+            confidenceFactors.push("Normal blood pressure");
+        } else if (sbp < 70 || sbp > 180) {
+            adjustment -= 1;
+            confidenceFactors.push("Critical blood pressure values");
         }
-    }
-    
-    // Pain-KTAS consistency
-    if (nrsPain >= 8 && nurseKTAS >= 4) {
-        adjustment -= 3;
-        factors.push("Severe pain (NRS 8+) typically requires KTAS 2-3");
-    } else if (nrsPain <= 3 && nurseKTAS <= 2 && criticalIndicators.stable) {
-        adjustment -= 2;
-        factors.push("Low pain with stable vitals may not require high acuity");
-    }
-    
-    // Injury vs non-injury consistency
-    if (injury === '2' && nurseKTAS >= 4 && (sbp < 100 || nrsPain >= 6)) {
-        adjustment -= 2;
-        factors.push("Injury with pain/hypotension may need higher priority");
-    }
-    
-    // Positive consistency indicators
-    if (inconsistencies.length === 0) {
-        if ((nurseKTAS <= 2 && (criticalIndicators.level1 || criticalIndicators.level2)) ||
-            (nurseKTAS === 3 && criticalIndicators.level3) ||
-            (nurseKTAS >= 4 && criticalIndicators.stable)) {
-            adjustment += 4;
-            factors.push("KTAS assessment aligns well with clinical indicators");
+        
+        if (rr >= 16 && rr <= 20) {
+            adjustment += 1;
+            confidenceFactors.push("Normal respiratory rate");
+        } else if (rr < 12 || rr > 25) {
+            adjustment -= 1;
+            confidenceFactors.push("Abnormal respiratory rate");
+        }
+        
+        if (bt >= 36.1 && bt <= 37.2) {
+            adjustment += 1;
+            confidenceFactors.push("Normal body temperature");
+        } else if (bt < 35.0 || bt > 38.5) {
+            adjustment -= 1;
+            confidenceFactors.push("Abnormal body temperature");
+        }
+        
+        if (saturation >= 95) {
+            adjustment += 1;
+            confidenceFactors.push("Normal oxygen saturation");
+        } else if (saturation < 90) {
+            adjustment -= 1;
+            confidenceFactors.push("Low oxygen saturation");
+        }
+        
+        // Chief Complaint Quality Assessment
+        const chiefComplaint = formData.get('Chief_complain');
+        if (chiefComplaint && chiefComplaint.length > 100) {
+            adjustment += 1;
+            confidenceFactors.push("Detailed chief complaint");
+        } else if (chiefComplaint && chiefComplaint.length > 50) {
+            adjustment += 1;
+            confidenceFactors.push("Adequate chief complaint detail");
         } else {
-            adjustment += 2;
-            factors.push("KTAS assessment reasonably consistent with vitals");
+            adjustment -= 1;
+            confidenceFactors.push("Limited chief complaint detail");
         }
+        
+        // Pain Assessment Consistency
+        const pain = formData.get('Pain');
+        if (pain === '1' && nrsPain > 0) {
+            adjustment += 1;
+            confidenceFactors.push("Consistent pain assessment");
+        } else if (pain === '2' && nrsPain === 0) {
+            adjustment += 1;
+            confidenceFactors.push("Consistent no-pain assessment");
+        } else if ((pain === '1' && nrsPain === 0) || (pain === '2' && nrsPain > 0)) {
+            adjustment -= 1;
+            confidenceFactors.push("Inconsistent pain assessment");
+        }
+        
+        // Age-related confidence
+        if (age >= 30 && age <= 70) {
+            adjustment += 1;
+            confidenceFactors.push("Optimal age range for model");
+        } else if (age < 25 || age > 80) {
+            adjustment -= 1;
+            confidenceFactors.push("Age at model performance edge");
+        }
+        
+        // Vital signs consistency check
+        const vitalSigns = [sbp, rr, bt, saturation];
+        const criticalCount = vitalSigns.filter((vital, index) => {
+            if (index === 0) return vital < 90 || vital > 160; // SBP
+            if (index === 1) return vital < 12 || vital > 24; // RR
+            if (index === 2) return vital < 36.0 || vital > 38.0; // BT
+            if (index === 3) return vital < 95; // Saturation
+            return false;
+        }).length;
+        
+        if (criticalCount === 0) {
+            adjustment += 1;
+            confidenceFactors.push("All vital signs within normal limits");
+        } else if (criticalCount >= 3) {
+            adjustment -= 1;
+            confidenceFactors.push("Multiple critical vital signs");
+        }
+
+        // Calculating final confidence
+        const finalConfidence = Math.min(Math.max(baseConfidence + adjustment, 50), 95);
+        
+        return {
+            confidence: finalConfidence,
+            baseConfidence: baseConfidence,
+            adjustment: adjustment,
+            factors: confidenceFactors,
+            ktasConsistency: ktasConsistency
+        };
     }
-    
-    // Multiple vital sign abnormalities with low KTAS
-    const abnormalCount = [
-        sbp < 90 || sbp > 160,
-        saturation < 95,
-        rr < 12 || rr > 24,
-        bt < 36 || bt > 38.5,
-        nrsPain >= 6
-    ].filter(Boolean).length;
-    
-    if (abnormalCount >= 3 && nurseKTAS >= 4) {
-        adjustment -= 5;
-        factors.push("Multiple abnormal indicators suggest higher acuity needed");
-    } else if (abnormalCount >= 2 && nurseKTAS >= 3) {
-        adjustment -= 2;
-        factors.push("Multiple concerning signs may warrant closer review");
+
+    // Function to analyze KTAS_RN consistency with clinical indicators
+    function analyzeKTASConsistency(nurseKTAS, vitals) {
+        const { sbp, rr, bt, saturation, nrsPain, age, injury } = vitals;
+        let adjustment = 0;
+        let factors = [];
+        let inconsistencies = [];
+        
+        // Defining expected KTAS ranges based on clinical indicators
+        const criticalIndicators = {
+            level1: sbp < 70 || saturation < 85 || rr < 8 || rr > 35 || bt < 32 || bt > 42,
+            level2: (sbp < 90 && sbp >= 70) || (saturation < 90 && saturation >= 85) || 
+                    (rr < 12 && rr >= 8) || (rr > 28 && rr <= 35) || 
+                    (bt < 35 && bt >= 32) || (bt > 39 && bt <= 42) || nrsPain >= 8,
+            level3: (sbp < 100 && sbp >= 90) || (saturation < 95 && saturation >= 90) || 
+                    (rr < 16 && rr >= 12) || (rr > 24 && rr <= 28) || 
+                    (bt < 36 && bt >= 35) || (bt > 38.5 && bt <= 39) || 
+                    (nrsPain >= 5 && nrsPain < 8),
+            stable: sbp >= 100 && saturation >= 95 && rr >= 16 && rr <= 24 && 
+                    bt >= 36 && bt <= 38.5 && nrsPain < 5
+        };
+        
+        // Checking for major inconsistencies
+        if (nurseKTAS >= 4 && criticalIndicators.level1) {
+            adjustment -= 1;
+            inconsistencies.push("KTAS 4-5 assigned despite critical vital signs requiring Level 1");
+            factors.push("Major KTAS inconsistency detected - critical vitals underestimated");
+        } else if (nurseKTAS >= 3 && criticalIndicators.level1) {
+            adjustment -= 1;
+            inconsistencies.push("KTAS 3+ assigned despite resuscitation-level vitals");
+            factors.push("Significant KTAS inconsistency - resuscitation vitals underestimated");
+        } else if (nurseKTAS >= 4 && criticalIndicators.level2) {
+            adjustment -= 1;
+            inconsistencies.push("KTAS 4-5 assigned despite emergent-level indicators");
+            factors.push("KTAS inconsistency - emergent vitals underestimated");
+        } else if (nurseKTAS <= 2 && criticalIndicators.stable) {
+            adjustment -= 1;
+            inconsistencies.push("KTAS 1-2 assigned despite stable vital signs");
+            factors.push("KTAS over-triage - stable vitals assigned high acuity");
+        }
+        
+        // Age-specific KTAS considerations
+        if (age >= 75) {
+            if (nurseKTAS >= 4 && (sbp < 100 || saturation < 95)) {
+                adjustment -= 1;
+                factors.push("Elderly patient with borderline vitals may need higher acuity");
+            } else if (nurseKTAS <= 3 && criticalIndicators.stable) {
+                adjustment += 1;
+                factors.push("Appropriate higher acuity for elderly patient");
+            }
+        }
+        
+        // Pain-KTAS consistency
+        if (nrsPain >= 8 && nurseKTAS >= 4) {
+            adjustment -= 1;
+            factors.push("Severe pain (NRS 8+) typically requires KTAS 2-3");
+        } else if (nrsPain <= 3 && nurseKTAS <= 2 && criticalIndicators.stable) {
+            adjustment -= 1;
+            factors.push("Low pain with stable vitals may not require high acuity");
+        }
+        
+        // Injury vs non-injury consistency
+        if (injury === '2' && nurseKTAS >= 4 && (sbp < 100 || nrsPain >= 6)) {
+            adjustment -= 1;
+            factors.push("Injury with pain/hypotension may need higher priority");
+        }
+        
+        // Positive consistency indicators
+        if (inconsistencies.length === 0) {
+            if ((nurseKTAS <= 2 && (criticalIndicators.level1 || criticalIndicators.level2)) ||
+                (nurseKTAS === 3 && criticalIndicators.level3) ||
+                (nurseKTAS >= 4 && criticalIndicators.stable)) {
+                adjustment += 1;
+                factors.push("KTAS assessment aligns well with clinical indicators");
+            } else if (Math.abs(nurseKTAS - 3) <= 1) {
+                adjustment += 1;
+                factors.push("KTAS assessment reasonably consistent with clinical data");
+            }
+        }
+        
+        return {
+            adjustment: adjustment,
+            factors: factors,
+            inconsistencies: inconsistencies
+        };
     }
-    
-    return {
-        adjustment: adjustment,
-        factors: factors,
-        inconsistencies: inconsistencies,
-        riskLevel: inconsistencies.length > 0 ? 'high' : abnormalCount >= 2 ? 'moderate' : 'low'
-    };
-}
 
     document.getElementById('predictionForm').addEventListener('submit', function (e) {
         e.preventDefault();
@@ -386,7 +368,7 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
         // Calculating adjusted confidence
         const confidenceData = calculateAdjustedConfidence(formData);
         
-        // Debug: Log form data
+        // Debugging: Log form data
         console.log('Submitting form data:');
         for (let [key, value] of formData.entries()) {
             console.log(key, ':', value);
@@ -440,6 +422,12 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
                     confidenceData.adjustment < 0 ? 
                     `${confidenceData.adjustment}%` : 
                     'No adjustment';
+
+                const reassessmentFlag = confidence < 85 ? 
+                    `<div class="reassessment-alert" style="margin-top: 15px; padding: 12px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; color: #856404;">
+                        <strong>⚠ Clinical Reassessment Recommended</strong><br>
+                        <small>Confidence below 85% suggests potential inconsistencies in clinical data. Consider expert review.</small>
+                    </div>` : '';
                 
                 resultDiv.innerHTML = `
                     <div><strong>Predicted KTAS Expert Level:</strong></div>
@@ -457,6 +445,7 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
                             <small>Base model: ${confidenceData.baseConfidence}% | Clinical adjustment: ${adjustmentText}</small>
                         </div>
                     </div>
+                    ${reassessmentFlag}
                     <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">
                         <strong>Clinical Priority:</strong> ${ktasLevel <= 2 ? 'Critical - Immediate attention required' : 
                                                             ktasLevel === 3 ? 'Urgent - Prompt assessment needed' : 
@@ -512,11 +501,11 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
         });
     });
 
-    // Auto-save form data to localStorage
+    // Auto-saving form data to localStorage
     const form = document.getElementById('predictionForm');
     const formFields = form.querySelectorAll('input, select, textarea');
     
-    // Load saved data
+    // Loading saved data
     formFields.forEach(field => {
         const savedValue = localStorage.getItem(`ktas_${field.name}`);
         if (savedValue && savedValue !== 'null') {
@@ -524,7 +513,7 @@ function analyzeKTASConsistency(nurseKTAS, vitals) {
         }
     });
     
-    // Save data on change
+    // Saving data on change
     formFields.forEach(field => {
         field.addEventListener('change', function() {
             localStorage.setItem(`ktas_${this.name}`, this.value);
